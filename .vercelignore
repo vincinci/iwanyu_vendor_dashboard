@@ -12,41 +12,13 @@ coverage
 tests
 playwright-report
 test-results
-*.test.*
-*.spec.*
 
-# Scripts and setup files
-scripts
-*.mjs
-*.sh
-create-*.js
-setup-*.js
-test-*.js
-check-*.js
-verify-*.js
-comprehensive-*.js
-final-*.js
-ultimate-*.js
-
-# Documentation
+# Documentation (except README)
 *.md
 !README.md
 
 # Supabase CLI
 supabase
-
-# Temporary files
-*.temp
-.temp
-temp_*
-
-# Database files
-*.sql
-!migrations/*.sql
-
-# Coverage and reports
-coverage
-*.log
 
 # IDE
 .vscode
