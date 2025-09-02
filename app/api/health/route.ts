@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextResponse } from "next/server"
 
 export async function GET() {
@@ -23,7 +23,7 @@ export async function GET() {
     // Database connectivity check
     try {
       const dbStartTime = Date.now()
-      const supabase = await createClient()
+      const supabase = await createServerClient()
       
       // Simple query to test database connection
       const { data, error } = await supabase

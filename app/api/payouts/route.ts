@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Get payouts or create payout request
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") // pending, processing, completed, failed
     const limit = parseInt(searchParams.get("limit") || "20")
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 // Create payout request (vendors only)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

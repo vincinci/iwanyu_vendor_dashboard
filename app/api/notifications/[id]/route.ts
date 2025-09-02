@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Mark notification as read
@@ -8,7 +8,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -52,7 +52,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
@@ -7,7 +7,7 @@ export async function PATCH(
   { params }: { params: { vendorId: string } }
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     
     // Check authentication and admin role
     const { data: { user } } = await supabase.auth.getUser()
@@ -86,7 +86,7 @@ export async function DELETE(
   { params }: { params: { vendorId: string } }
 ) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     
     // Check authentication and admin role
     const { data: { user } } = await supabase.auth.getUser()

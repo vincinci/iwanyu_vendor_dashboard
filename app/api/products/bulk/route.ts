@@ -1,10 +1,10 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Bulk operations for products
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

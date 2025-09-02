@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Get user notifications
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20")
     const unreadOnly = searchParams.get("unread_only") === "true"
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 // Create a new notification
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 interface Params {
@@ -13,7 +13,7 @@ export async function GET(
   try {
     const { id } = await context.params
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -77,7 +77,7 @@ export async function PATCH(
   try {
     const { id } = await context.params
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -164,7 +164,7 @@ export async function DELETE(
   try {
     const { id } = await context.params
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function DELETE(
@@ -7,7 +7,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     
     // Get the authenticated user
     const {
@@ -81,7 +81,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     
     // Get the authenticated user
     const {
@@ -125,7 +125,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     
     // Get the authenticated user
     const {

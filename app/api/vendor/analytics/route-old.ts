@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Get vendor-specific analytics
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const period = searchParams.get("period") || "30d" // 7d, 30d, 90d, 1y
     const type = searchParams.get("type") || "overview" // overview, products, orders, revenue
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Get products with filtering, sorting, and pagination
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const min_price = searchParams.get("min_price")
     const max_price = searchParams.get("max_price")
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 // Create new product (vendors and admins)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,

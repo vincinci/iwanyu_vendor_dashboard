@@ -1,4 +1,4 @@
-import { createClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 // Get orders with filtering and pagination
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get("sort") || "created_at"
     const order = searchParams.get("order") || "desc"
     
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
 // Create new order (customers and admins)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerClient()
     const {
       data: { user },
       error: authError,
