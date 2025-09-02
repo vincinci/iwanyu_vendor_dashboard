@@ -30,8 +30,16 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (user) {
-    // Get user profile to determine role
-    const { data: profile } = await supabase.from("profiles").select("role, status").eq("id", user.id).single()
+    // Try to get user profile to determine role
+    let profile = null
+    try {
+      const { data: profileData } = await supabase.from("profiles").select("role, status").eq("id", user.id).single()
+      profile = profileData
+    } catch (error) {
+      // If profile doesn't exist, create a default one for now
+      console.log("Profile not found, using default vendor role:", error)
+      profile = { role: "vendor", status: "active" }
+    }
 
     // Redirect based on role and current path
     if (profile) {

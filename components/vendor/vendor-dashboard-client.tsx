@@ -77,10 +77,60 @@ export function VendorDashboardClient() {
         throw new Error('Failed to fetch dashboard data')
       }
 
-      const data = await response.json()
-      setStats(data)
+      const result = await response.json()
+      // Handle the API response structure correctly
+      if (result.success && result.data) {
+        setStats({
+          overview: result.data.overview || {
+            total_revenue: 0,
+            revenue_change: 0,
+            total_orders: 0,
+            orders_change: 0,
+            total_products: 0,
+            products_change: 0,
+            avg_order_value: 0,
+            aov_change: 0
+          },
+          products: result.data.products || [],
+          recentOrders: result.data.recent_orders || [],
+          lowStockProducts: []
+        })
+      } else {
+        // Use fallback data if API doesn't return expected structure
+        setStats({
+          overview: {
+            total_revenue: 0,
+            revenue_change: 0,
+            total_orders: 0,
+            orders_change: 0,
+            total_products: 0,
+            products_change: 0,
+            avg_order_value: 0,
+            aov_change: 0
+          },
+          products: [],
+          recentOrders: [],
+          lowStockProducts: []
+        })
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
+      // Set fallback data on error
+      setStats({
+        overview: {
+          total_revenue: 0,
+          revenue_change: 0,
+          total_orders: 0,
+          orders_change: 0,
+          total_products: 0,
+          products_change: 0,
+          avg_order_value: 0,
+          aov_change: 0
+        },
+        products: [],
+        recentOrders: [],
+        lowStockProducts: []
+      })
       toast({
         title: "Error",
         description: "Failed to load dashboard data. Please try again.",
@@ -316,27 +366,33 @@ export function VendorDashboardClient() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.recentOrders && stats.recentOrders.slice(0, 5).map((order) => (
-                    <div key={order.id} className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium">{order.customer_name}</p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {order.items_count} item(s)
-                          </span>
+                  {stats?.recentOrders && stats.recentOrders.length > 0 ? 
+                    stats.recentOrders.slice(0, 5).map((order) => (
+                      <div key={order.id} className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium">{order.customer_name}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className={getStatusColor(order.status)}>
+                              {order.status}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {order.items_count} item(s)
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{formatCurrency(order.total)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(order.created_at)}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{formatCurrency(order.total)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(order.created_at)}
-                        </p>
+                    )) : (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        No recent orders to display
                       </div>
-                    </div>
-                  ))}
+                    )
+                  }
                 </div>
               </CardContent>
             </Card>
@@ -355,22 +411,28 @@ export function VendorDashboardClient() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.products && stats.products.slice(0, 5).map((product) => (
-                    <div key={product.id} className="flex items-center justify-between">
-                      <div className="space-y-1 flex-1">
-                        <p className="text-sm font-medium truncate">{product.name}</p>
-                        <div className="text-xs text-muted-foreground">
-                          {product.total_sales} sales • {product.views} views
+                  {stats?.products && stats.products.length > 0 ? 
+                    stats.products.slice(0, 5).map((product) => (
+                      <div key={product.id} className="flex items-center justify-between">
+                        <div className="space-y-1 flex-1">
+                          <p className="text-sm font-medium truncate">{product.name}</p>
+                          <div className="text-xs text-muted-foreground">
+                            {product.total_sales} sales • {product.views} views
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{formatCurrency(product.revenue)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Stock: {product.stock_quantity}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{formatCurrency(product.revenue)}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Stock: {product.stock_quantity}
-                        </p>
+                    )) : (
+                      <div className="text-center py-4 text-sm text-muted-foreground">
+                        No products to display
                       </div>
-                    </div>
-                  ))}
+                    )
+                  }
                 </div>
               </CardContent>
             </Card>
@@ -385,25 +447,33 @@ export function VendorDashboardClient() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.products && stats.products.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1 flex-1">
-                      <p className="font-medium">{product.name}</p>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{product.total_sales} sales</span>
-                        <span>{product.views} views</span>
-                        <span>Stock: {product.stock_quantity}</span>
+                {stats?.products && stats.products.length > 0 ? 
+                  stats.products.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="space-y-1 flex-1">
+                        <p className="font-medium">{product.name}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>{product.total_sales} sales</span>
+                          <span>{product.views} views</span>
+                          <span>Stock: {product.stock_quantity}</span>
+                        </div>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="font-medium">{formatCurrency(product.revenue)}</p>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
                       </div>
                     </div>
-                    <div className="text-right space-y-1">
-                      <p className="font-medium">{formatCurrency(product.revenue)}</p>
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
+                  )) : (
+                    <div className="text-center py-8 text-sm text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No products found</p>
+                      <p className="text-xs">Create your first product to get started</p>
                     </div>
-                  </div>
-                ))}
+                  )
+                }
               </div>
             </CardContent>
           </Card>

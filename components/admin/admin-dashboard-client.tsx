@@ -247,7 +247,7 @@ export function AdminDashboardClient() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" data-testid="loading-skeleton">
         {/* Loading skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(6)].map((_, i) => (

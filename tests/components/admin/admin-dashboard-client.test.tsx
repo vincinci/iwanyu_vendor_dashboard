@@ -1,6 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { AdminDashboardClient } from '@/components/admin/admin-dashboard-client'
+import { LanguageProvider } from '@/lib/i18n/context'
+
+// Test wrapper component with required providers
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <LanguageProvider>
+    {children}
+  </LanguageProvider>
+)
 
 // Mock the dependencies
 jest.mock('@/hooks/use-toast', () => ({
@@ -98,11 +106,10 @@ describe('AdminDashboardClient', () => {
   })
 
   test('shows loading skeleton initially', () => {
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
-    // Should show loading skeleton - look for animated elements
-    const animatedElements = document.querySelectorAll('.animate-pulse')
-    expect(animatedElements.length).toBeGreaterThan(0)
+    // Check for loading skeleton
+    expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument()
   })
 
   test('displays dashboard data after loading', async () => {
@@ -126,7 +133,7 @@ describe('AdminDashboardClient', () => {
       json: async () => mockAnalytics,
     })
 
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     // Wait for data to load - use more flexible text matching
     await waitFor(() => {
@@ -144,7 +151,7 @@ describe('AdminDashboardClient', () => {
   })
 
   test('handles period selection correctly', async () => {
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText((content, element) => {
@@ -163,7 +170,7 @@ describe('AdminDashboardClient', () => {
   })
 
   test('displays pending approvals alert when available', async () => {
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText('You have 1 pending approval(s) requiring your attention.')).toBeInTheDocument()
@@ -171,7 +178,7 @@ describe('AdminDashboardClient', () => {
   })
 
   test('shows system health metrics', async () => {
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText((content, element) => {
@@ -201,7 +208,7 @@ describe('AdminDashboardClient', () => {
       })
     )
 
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText((content, element) => {
@@ -227,7 +234,7 @@ describe('AdminDashboardClient', () => {
   })
 
   test('switches between tabs correctly', async () => {
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText((content, element) => {
@@ -249,7 +256,7 @@ describe('AdminDashboardClient', () => {
     const mockFetch = fetch as jest.Mock
     mockFetch.mockRejectedValueOnce(new Error('API Error'))
 
-    render(<AdminDashboardClient />)
+    render(<AdminDashboardClient />, { wrapper: TestWrapper })
     
     await waitFor(() => {
       expect(screen.getByText('Unable to load admin dashboard data. Please refresh the page.')).toBeInTheDocument()

@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = await createServerClient()
@@ -26,7 +26,7 @@ export async function PATCH(
     }
 
     const { action } = await request.json()
-    const vendorId = params.vendorId
+    const vendorId = params.id
 
     // Use service client to update vendor status
     const serviceSupabase = createServiceClient(
@@ -83,7 +83,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = await createServerClient()
@@ -104,7 +104,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const vendorId = params.vendorId
+    const vendorId = params.id
 
     // Use service client to delete vendor and related data
     const serviceSupabase = createServiceClient(

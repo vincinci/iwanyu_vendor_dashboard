@@ -3,10 +3,10 @@ import { createClient } from '@/utils/supabase-server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { vendorId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = await createServerClient()
+    const supabase = await createClient()
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,19 +26,19 @@ export async function POST(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    const vendorId = params.vendorId
+    const vendorId = params.id
 
-    // Update vendor status to suspended
+    // Update vendor status to approved
     const { data, error } = await supabase
       .from('profiles')
-      .update({ status: 'suspended' })
+      .update({ status: 'active' })
       .eq('id', vendorId)
       .eq('role', 'vendor')
       .select()
 
     if (error) {
-      console.error('Error suspending vendor:', error)
-      return NextResponse.json({ error: 'Failed to suspend vendor' }, { status: 500 })
+      console.error('Error approving vendor:', error)
+      return NextResponse.json({ error: 'Failed to approve vendor' }, { status: 500 })
     }
 
     if (!data || data.length === 0) {
@@ -46,12 +46,12 @@ export async function POST(
     }
 
     return NextResponse.json({ 
-      message: 'Vendor suspended successfully',
+      message: 'Vendor approved successfully',
       vendor: data[0]
     })
 
   } catch (error) {
-    console.error('Admin vendor suspension error:', error)
+    console.error('Admin vendor approval error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,5 +1,5 @@
 import { createClient as createServerClient } from "@/utils/supabase-server"
-import { createClient } from "@supabase/supabase-js"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Use service role client for storage operations to bypass RLS
-    const supabaseAdmin = createClient(
+    const supabaseAdmin = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
