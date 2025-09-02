@@ -1,15 +1,26 @@
-import { createServerClient } from "@/utils/supabase-server"
+import { createClient as createServerClient } from "@/utils/supabase-server"
 import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Upload API called')
+    
     const supabase = await createServerClient()
     
     // Check authentication first
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
+      console.error('Authentication error:', authError)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    console.log('User authenticated:', user.id)
+
+    // Verify environment variables
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing environment variables')
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
     }
 
     // Use service role client for storage operations to bypass RLS
@@ -28,8 +39,17 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const path = formData.get('path') as string || 'products'
+    const bucket = formData.get('bucket') as string || 'products'
+    
+    console.log('Form data received:', { 
+      fileName: file?.name, 
+      fileSize: file?.size, 
+      path, 
+      bucket 
+    })
     
     if (!file) {
+      console.error('No file provided')
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
@@ -38,9 +58,11 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2)}.${fileExt}`
     const filePath = `${path}/${fileName}`
 
+    console.log('Uploading to:', { bucket, filePath })
+
     // Upload file to storage using admin client
     const { data, error } = await supabaseAdmin.storage
-      .from('products')
+      .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
         upsert: false
@@ -53,10 +75,14 @@ export async function POST(request: NextRequest) {
       }, { status: 500 })
     }
 
+    console.log('Upload successful:', data)
+
     // Get public URL using admin client
     const { data: { publicUrl } } = supabaseAdmin.storage
-      .from('products')
+      .from(bucket)
       .getPublicUrl(filePath)
+
+    console.log('Public URL generated:', publicUrl)
 
     return NextResponse.json({
       success: true,

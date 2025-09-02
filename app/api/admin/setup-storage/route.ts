@@ -14,74 +14,57 @@ export async function POST() {
       }
     })
 
-    // First, ensure the bucket exists
-    const { data: buckets, error: bucketsError } = await supabaseAdmin.storage.listBuckets()
-    
-    if (bucketsError) {
-      console.error('Error listing buckets:', bucketsError)
-      return NextResponse.json({ error: 'Failed to list buckets' }, { status: 500 })
-    }
-
-    const productsBucketExists = buckets.some(bucket => bucket.name === 'products')
-    
-    if (!productsBucketExists) {
-      // Create the products bucket
-      const { error: createBucketError } = await supabaseAdmin.storage.createBucket('products', {
-        public: true,
-        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-        fileSizeLimit: 10485760 // 10MB
-      })
-
-      if (createBucketError) {
-        console.error('Error creating bucket:', createBucketError)
-        return NextResponse.json({ error: 'Failed to create bucket' }, { status: 500 })
+    // Step 1: Create the buckets using the storage API
+    const buckets = [
+      { 
+        id: 'products', 
+        options: { 
+          public: true, 
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+          fileSizeLimit: 10485760 // 10MB 
+        } 
+      },
+      { 
+        id: 'documents', 
+        options: { 
+          public: false, 
+          allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
+          fileSizeLimit: 10485760 
+        } 
+      },
+      { 
+        id: 'stores', 
+        options: { 
+          public: true, 
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+          fileSizeLimit: 10485760 
+        } 
       }
-    }
+    ]
 
-    // Execute SQL to create RLS policies
-    const { error: sqlError } = await supabaseAdmin.rpc('exec_sql', {
-      sql: `
-        -- Enable RLS on storage.objects if not already enabled
-        ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+    const results = []
 
-        -- Drop existing policies if they exist
-        DROP POLICY IF EXISTS "Authenticated users can upload to products bucket" ON storage.objects;
-        DROP POLICY IF EXISTS "Public read access for products bucket" ON storage.objects;
-        DROP POLICY IF EXISTS "Users can delete their own uploads" ON storage.objects;
-        DROP POLICY IF EXISTS "Users can update their own uploads" ON storage.objects;
-
-        -- Create policies for products bucket
-        CREATE POLICY "Authenticated users can upload to products bucket"
-        ON storage.objects FOR INSERT
-        TO authenticated
-        WITH CHECK (bucket_id = 'products');
-
-        CREATE POLICY "Public read access for products bucket"
-        ON storage.objects FOR SELECT
-        TO public
-        USING (bucket_id = 'products');
-
-        CREATE POLICY "Users can delete their own uploads"
-        ON storage.objects FOR DELETE
-        TO authenticated
-        USING (bucket_id = 'products' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-        CREATE POLICY "Users can update their own uploads"
-        ON storage.objects FOR UPDATE
-        TO authenticated
-        USING (bucket_id = 'products' AND auth.uid()::text = (storage.foldername(name))[1]);
-      `
-    })
-
-    if (sqlError) {
-      console.error('Error executing SQL:', sqlError)
-      return NextResponse.json({ error: 'Failed to create policies' }, { status: 500 })
+    for (const bucket of buckets) {
+      try {
+        // Try to create the bucket
+        const { data, error: createError } = await supabaseAdmin.storage.createBucket(bucket.id, bucket.options)
+        if (createError && !createError.message.includes('already exists')) {
+          console.error(`Error creating bucket ${bucket.id}:`, createError)
+          results.push({ bucket: bucket.id, status: 'error', error: createError.message })
+        } else {
+          results.push({ bucket: bucket.id, status: 'success', created: !createError })
+        }
+      } catch (error) {
+        console.error(`Exception creating bucket ${bucket.id}:`, error)
+        results.push({ bucket: bucket.id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' })
+      }
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: 'Storage bucket and policies configured successfully',
-      bucketExists: productsBucketExists
+      message: 'Storage buckets setup completed. You need to manually run the RLS policies in Supabase SQL Editor.',
+      buckets: results,
+      note: 'Please run the SQL script in supabase_storage_policies.sql in your Supabase SQL Editor to complete the setup.'
     })
 
   } catch (error) {
