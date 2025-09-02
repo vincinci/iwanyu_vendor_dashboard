@@ -170,17 +170,27 @@ export async function POST(request: NextRequest) {
       name,
       description,
       price,
+      compare_at_price,
       category_id,
+      inventory_quantity,
       stock_quantity,
       sku,
+      brand,
       images,
       tags,
       specifications,
       weight,
       dimensions,
       status = "active",
+      featured,
+      seo_title,
+      seo_description,
+      track_inventory,
       vendor_id
     } = body
+
+    // Use inventory_quantity if provided, otherwise fall back to stock_quantity
+    const finalStockQuantity = inventory_quantity !== undefined ? inventory_quantity : (stock_quantity || 0)
 
     // Validation
     if (!name || !description || !price || !category_id) {
@@ -191,7 +201,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Price must be greater than 0" }, { status: 400 })
     }
 
-    if (stock_quantity < 0) {
+    if (finalStockQuantity < 0) {
       return NextResponse.json({ error: "Stock quantity cannot be negative" }, { status: 400 })
     }
 
@@ -221,15 +231,21 @@ export async function POST(request: NextRequest) {
         name,
         description,
         price,
+        compare_at_price,
         category_id,
-        stock_quantity: stock_quantity || 0,
+        stock_quantity: finalStockQuantity,
         sku: sku || `PRD-${Date.now()}`,
+        brand,
         images: images || [],
         tags: tags || [],
         specifications: specifications || {},
         weight,
         dimensions,
         status,
+        featured: featured || false,
+        seo_title,
+        seo_description,
+        track_inventory: track_inventory || false,
         vendor_id: finalVendorId,
       })
       .select(`
@@ -241,7 +257,32 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Error creating product:", error)
-      return NextResponse.json({ error: "Failed to create product" }, { status: 500 })
+      console.error("Product data that failed:", {
+        name,
+        description,
+        price,
+        compare_at_price,
+        category_id,
+        stock_quantity: finalStockQuantity,
+        sku: sku || `PRD-${Date.now()}`,
+        brand,
+        images: images || [],
+        tags: tags || [],
+        specifications: specifications || {},
+        weight,
+        dimensions,
+        status,
+        featured: featured || false,
+        seo_title,
+        seo_description,
+        track_inventory: track_inventory || false,
+        vendor_id: finalVendorId,
+      })
+      return NextResponse.json({ 
+        error: "Failed to create product", 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 })
     }
 
     // Create audit log
@@ -258,7 +299,7 @@ export async function POST(request: NextRequest) {
       console.log("Could not create audit log:", auditError)
     }
 
-    return NextResponse.json(product, { status: 201 })
+    return NextResponse.json({ data: product }, { status: 201 })
   } catch (error) {
     console.error("Error in POST /api/products:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
