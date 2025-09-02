@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CalendarDays, DollarSign, Package, ShoppingCart, TrendingUp, TrendingDown, Users, AlertTriangle, Plus, Eye, Edit } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/utils/supabase-client'
 import { useToast } from '@/hooks/use-toast'
 
 interface DashboardStats {

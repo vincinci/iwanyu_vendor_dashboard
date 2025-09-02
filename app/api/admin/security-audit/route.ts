@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase-server"
 import { NextRequest, NextResponse } from "next/server"
 
 interface SecurityCheck {

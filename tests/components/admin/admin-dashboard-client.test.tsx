@@ -9,7 +9,7 @@ jest.mock('@/hooks/use-toast', () => ({
   }),
 }))
 
-jest.mock('@/lib/supabase/client', () => ({
+jest.mock('@/utils/supabase-client', () => ({
   createClient: () => ({
     auth: {
       getUser: () => Promise.resolve({

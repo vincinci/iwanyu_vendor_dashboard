@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase-server"
 import { MessagesClient } from "@/components/vendor/messages-client"
 import { redirect } from "next/navigation"
 

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Send, Users, MessageSquare } from "lucide-react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/utils/supabase-client"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 

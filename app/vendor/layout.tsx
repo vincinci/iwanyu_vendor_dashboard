@@ -1,5 +1,5 @@
 import type React from "react"
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase-server"
 import { redirect } from "next/navigation"
 import { VendorSidebar } from "@/components/vendor/vendor-sidebar"
 import { VendorHeader } from "@/components/vendor/vendor-header"

@@ -1,6 +1,6 @@
 "use client"
 
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@/utils/supabase-client"
 import { useEffect, useState } from "react"
 
 interface Notification {

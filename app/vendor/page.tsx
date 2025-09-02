@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { createClient } from "@/utils/supabase-server"
 import { VendorDashboardClient } from "@/components/vendor/vendor-dashboard-client"
 
 export default async function VendorDashboard() {

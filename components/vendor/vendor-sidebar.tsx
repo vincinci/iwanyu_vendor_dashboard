@@ -19,7 +19,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/utils/supabase-client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 

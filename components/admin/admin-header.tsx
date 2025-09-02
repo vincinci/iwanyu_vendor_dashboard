@@ -14,7 +14,7 @@ import { Search, Settings, User, LogOut } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { NotificationBell } from "@/components/notifications/notification-bell"
-import { createBrowserClient } from "@/lib/supabase/client"
+import { createBrowserClient } from "@/utils/supabase-client"
 import { useRouter } from "next/navigation"
 import { useCallback, useMemo } from "react"
 
