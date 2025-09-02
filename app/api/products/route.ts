@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check user role
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Error fetching products:", error)
-      return new NextResponse("Failed to fetch products", { status: 500 })
+      return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error in GET /api/products:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (authError || !user) {
-      return new NextResponse("Unauthorized", { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     // Check user role
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (!["vendor", "admin"].includes(profile?.role || "")) {
-      return new NextResponse("Forbidden", { status: 403 })
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     const body = await request.json()
@@ -184,15 +184,15 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!name || !description || !price || !category_id) {
-      return new NextResponse("Missing required fields", { status: 400 })
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     if (price <= 0) {
-      return new NextResponse("Price must be greater than 0", { status: 400 })
+      return NextResponse.json({ error: "Price must be greater than 0" }, { status: 400 })
     }
 
     if (stock_quantity < 0) {
-      return new NextResponse("Stock quantity cannot be negative", { status: 400 })
+      return NextResponse.json({ error: "Stock quantity cannot be negative" }, { status: 400 })
     }
 
     // Determine vendor_id
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (existingProduct) {
-        return new NextResponse("SKU already exists for this vendor", { status: 400 })
+        return NextResponse.json({ error: "SKU already exists for this vendor" }, { status: 400 })
       }
     }
 
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Error creating product:", error)
-      return new NextResponse("Failed to create product", { status: 500 })
+      return NextResponse.json({ error: "Failed to create product" }, { status: 500 })
     }
 
     // Create audit log
@@ -261,6 +261,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 })
   } catch (error) {
     console.error("Error in POST /api/products:", error)
-    return new NextResponse("Internal server error", { status: 500 })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
