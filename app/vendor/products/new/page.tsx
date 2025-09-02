@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase-client"
 import { uploadFile, STORAGE_BUCKETS } from "@/utils/supabase-storage"
+import { authenticatedFetch } from "@/lib/api-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -222,11 +223,8 @@ export default function NewProductPage() {
       }
 
       // Insert product into database via API
-      const response = await fetch('/api/products', {
+      const response = await authenticatedFetch('/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(productData)
       })
 

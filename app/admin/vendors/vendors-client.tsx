@@ -12,6 +12,7 @@ import { Search, Eye, CheckCircle, XCircle, Clock, Users, Trash2 } from "lucide-
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { authenticatedFetch } from "@/lib/api-client"
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState<any[]>([])
@@ -56,7 +57,7 @@ export default function VendorsPage() {
   const loadVendors = useCallback(async () => {
     try {
       // Use cache-control headers for better performance
-      const response = await fetch("/api/admin/analytics?period=30d", {
+      const response = await authenticatedFetch("/api/admin/analytics?period=30d", {
         headers: {
           'Cache-Control': 'max-age=60' // Cache for 1 minute
         }
@@ -81,7 +82,7 @@ export default function VendorsPage() {
     setLoadingActions(prev => ({ ...prev, [vendorId]: true }))
     
     try {
-      const response = await fetch(`/api/admin/vendors/${vendorId}`, {
+      const response = await authenticatedFetch(`/api/admin/vendors/${vendorId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -110,7 +111,7 @@ export default function VendorsPage() {
     setLoadingActions(prev => ({ ...prev, [vendorId]: true }))
     
     try {
-      const response = await fetch(`/api/admin/vendors/${vendorId}`, {
+      const response = await authenticatedFetch(`/api/admin/vendors/${vendorId}`, {
         method: "DELETE",
       })
 

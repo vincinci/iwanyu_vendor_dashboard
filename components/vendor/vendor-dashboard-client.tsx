@@ -11,6 +11,7 @@ import { CalendarDays, DollarSign, Package, ShoppingCart, TrendingUp, TrendingDo
 import { createClient } from '@/utils/supabase-client'
 import { useToast } from '@/hooks/use-toast'
 import { useLanguage } from '@/lib/i18n/context'
+import { authenticatedFetch } from '@/lib/api-client'
 
 interface DashboardStats {
   overview: {
@@ -70,7 +71,7 @@ export function VendorDashboardClient() {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await fetch(`/api/vendor/analytics?period=${period}`)
+      const response = await authenticatedFetch(`/api/vendor/analytics?period=${period}`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch dashboard data')

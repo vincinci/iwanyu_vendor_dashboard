@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { createClient } from '@/utils/supabase-client'
 import { useLanguage } from '@/lib/i18n/context'
+import { authenticatedFetch } from '@/lib/api-client'
 import { 
   DollarSign, 
   ShoppingCart, 
@@ -131,7 +132,7 @@ export function AdminDashboardClient() {
     try {
       // Parallel fetch for better performance
       const [analyticsResponse, authResponse] = await Promise.all([
-        fetch(`/api/admin/analytics?period=${period}`, {
+        authenticatedFetch(`/api/admin/analytics?period=${period}`, {
           headers: {
             'Cache-Control': 'no-cache'
           }
@@ -224,7 +225,7 @@ export function AdminDashboardClient() {
 
   const handleApproveVendor = async (vendorId: string) => {
     try {
-      const response = await fetch(`/api/admin/vendors/${vendorId}/approve`, {
+      const response = await authenticatedFetch(`/api/admin/vendors/${vendorId}/approve`, {
         method: 'POST',
       })
       
