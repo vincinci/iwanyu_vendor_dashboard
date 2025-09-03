@@ -136,7 +136,7 @@ export default async function ViewProductPage({ params }: PageProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Category</span>
                 <span className="text-sm text-muted-foreground">
-                  {product.categories?.name || "Uncategorized"}
+                  {product.categories?.name || product.category || "Uncategorized"}
                 </span>
               </div>
 

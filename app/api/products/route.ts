@@ -260,6 +260,8 @@ export async function POST(request: NextRequest) {
       description,
       price,
       compare_at_price,
+      category: category || null, // For current schema compatibility
+      category_id: category_id || null, // For future use when schema is updated
       inventory_quantity: finalInventoryQuantity,
       sku: sku || `PRD-${Date.now()}`,
       images: images || [],
