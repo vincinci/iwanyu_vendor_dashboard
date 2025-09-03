@@ -3,7 +3,7 @@ import { createClient } from "@/utils/supabase-server"
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     const supabase = await createClient()
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const productId = params.productId
+    const productId = params.id
 
     // Get the product with its images
     const { data: product, error: productError } = await supabase
@@ -51,7 +51,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error("Error in GET /api/products/[productId]/export-images:", error)
+    console.error("Error in GET /api/products/[id]/export-images:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
