@@ -277,11 +277,15 @@ export async function POST(request: NextRequest) {
       productInsertData.store_id = storeId
     }
 
+    console.log('🔍 Product data being inserted into DB:', productInsertData)
+
     const { data: product, error } = await supabase
       .from("products")
       .insert(productInsertData)
       .select()
       .single()
+
+    console.log('🔍 Database response:', { product, error })
 
     if (error) {
       console.error("Error creating product:", error)

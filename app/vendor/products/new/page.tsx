@@ -297,6 +297,7 @@ export default function AddProductPage() {
           reorderedFiles.unshift(primaryFile)
         }
         imageUrls = await uploadImages(reorderedFiles)
+        console.log('🔍 Uploaded image URLs:', imageUrls)
       }
 
       // Prepare product data to match API schema (with both category fields for compatibility)
@@ -315,6 +316,8 @@ export default function AddProductPage() {
         tags: []
       }
 
+      console.log('🔍 Product data being sent:', productData)
+
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {
@@ -324,6 +327,7 @@ export default function AddProductPage() {
       })
 
       const result = await response.json()
+      console.log('🔍 API response:', result)
 
       if (!response.ok) {
         throw new Error(result.error || "Failed to create product")
