@@ -28,6 +28,7 @@ export default function AddProductPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [selectedImagePreviews, setSelectedImagePreviews] = useState<{file: File, preview: string}[]>([])
   const [primaryImageIndex, setPrimaryImageIndex] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -128,6 +129,7 @@ export default function AddProductPage() {
 
   const uploadImages = async (files: File[]) => {
     console.log(`🔄 Starting robust upload of ${files.length} files...`)
+    setUploadStatus('uploading')
 
     try {
       // First, try the new robust upload API
@@ -146,6 +148,7 @@ export default function AddProductPage() {
         
         if (result.success && result.uploadedUrls.length > 0) {
           console.log(`✅ API upload successful: ${result.uploadedUrls.length}/${result.totalFiles} files`)
+          setUploadStatus('success')
           
           if (result.errors && result.errors.length > 0) {
             result.errors.forEach((error: string) => {
@@ -171,11 +174,15 @@ export default function AddProductPage() {
 
       // If API upload fails, fall back to direct Supabase upload
       console.log('⚠️ API upload failed, trying direct upload...')
-      return await uploadImagesDirect(files)
+      const urls = await uploadImagesDirect(files)
+      setUploadStatus(urls.length > 0 ? 'success' : 'error')
+      return urls
 
     } catch (error) {
       console.error('❌ API upload error:', error)
-      return await uploadImagesDirect(files)
+      const urls = await uploadImagesDirect(files)
+      setUploadStatus(urls.length > 0 ? 'success' : 'error')
+      return urls
     }
   }
 
@@ -522,6 +529,38 @@ export default function AddProductPage() {
                           </p>
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* Upload Status Indicator */}
+                  {uploadStatus !== 'idle' && (
+                    <div className={`p-3 rounded-lg border ${
+                      uploadStatus === 'uploading' ? 'bg-blue-50 border-blue-200' :
+                      uploadStatus === 'success' ? 'bg-green-50 border-green-200' :
+                      uploadStatus === 'error' ? 'bg-red-50 border-red-200' : ''
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        {uploadStatus === 'uploading' && (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                            <span className="text-sm text-blue-700 font-medium">Uploading images...</span>
+                          </>
+                        )}
+                        {uploadStatus === 'success' && (
+                          <>
+                            <div className="h-4 w-4 bg-green-600 rounded-full flex items-center justify-center">
+                              <div className="h-2 w-2 bg-white rounded-full"></div>
+                            </div>
+                            <span className="text-sm text-green-700 font-medium">Images uploaded successfully!</span>
+                          </>
+                        )}
+                        {uploadStatus === 'error' && (
+                          <>
+                            <X className="h-4 w-4 text-red-600" />
+                            <span className="text-sm text-red-700 font-medium">Upload failed - using backup storage</span>
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
