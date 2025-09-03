@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Eye, Edit, Trash2, Download, Loader2 } from "lucide-react"
+import { Eye, Edit, Trash2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -26,53 +26,6 @@ interface ProductCardActionsProps {
 export function ProductCardActions({ productId, productName }: ProductCardActionsProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
-
-    const handleExportImages = async () => {
-    if (!product.images || product.images.length === 0) {
-      toast({
-        title: "No Images",
-        description: "This product has no images to export",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setIsExporting(true)
-
-    try {
-      for (let i = 0; i < product.images.length; i++) {
-        const imageUrl = product.images[i]
-        const response = await fetch(imageUrl)
-        
-        if (response.ok) {
-          const blob = await response.blob()
-          const url = window.URL.createObjectURL(blob)
-          const link = document.createElement('a')
-          link.href = url
-          link.download = `${product.name}-image-${i + 1}.jpg`
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.URL.revokeObjectURL(url)
-        }
-      }
-
-      toast({
-        title: "Export Successful",
-        description: `Exported ${product.images.length} image(s)`,
-        variant: "default"
-      })
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "Failed to export images",
-        variant: "destructive"
-      })
-    } finally {
-      setIsExporting(false)
-    }
-  }
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -108,19 +61,6 @@ export function ProductCardActions({ productId, productName }: ProductCardAction
         <Link href={`/vendor/products/edit/${productId}`}>
           <Edit className="h-3 w-3" />
         </Link>
-      </Button>
-      <Button 
-        size="sm" 
-        variant="outline" 
-        onClick={handleExportImages}
-        disabled={isExporting}
-        title="Export Images"
-      >
-        {isExporting ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <Download className="h-3 w-3" />
-        )}
       </Button>
       
       <AlertDialog>
