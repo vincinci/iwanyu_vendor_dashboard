@@ -93,7 +93,7 @@ export function VendorDashboardClient() {
           },
           products: result.data.products || [],
           recentOrders: result.data.recent_orders || [],
-          lowStockProducts: []
+          lowStockProducts: result.data.low_stock_products || []
         })
       } else {
         // Use fallback data if API doesn't return expected structure

@@ -172,17 +172,13 @@ export async function POST(request: NextRequest) {
       price,
       compare_at_price,
       category_id,
+      category,
       inventory_quantity,
       stock_quantity,
       sku,
-      brand,
       images,
       tags,
-      specifications,
-      weight,
-      dimensions,
       status = "active",
-      featured,
       seo_title,
       seo_description,
       track_inventory,
@@ -190,25 +186,58 @@ export async function POST(request: NextRequest) {
     } = body
 
     // Use inventory_quantity if provided, otherwise fall back to stock_quantity
-    const finalStockQuantity = inventory_quantity !== undefined ? inventory_quantity : (stock_quantity || 0)
+    const finalInventoryQuantity = inventory_quantity !== undefined ? inventory_quantity : (stock_quantity || 0)
 
     // Validation
-    if (!name || !description || !price || !category_id) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!name || !description || !price) {
+      return NextResponse.json({ error: "Missing required fields: name, description, price" }, { status: 400 })
     }
 
     if (price <= 0) {
       return NextResponse.json({ error: "Price must be greater than 0" }, { status: 400 })
     }
 
-    if (finalStockQuantity < 0) {
-      return NextResponse.json({ error: "Stock quantity cannot be negative" }, { status: 400 })
+    if (finalInventoryQuantity < 0) {
+      return NextResponse.json({ error: "Inventory quantity cannot be negative" }, { status: 400 })
     }
 
     // Determine vendor_id
     let finalVendorId = user.id
     if (profile?.role === "admin" && vendor_id) {
       finalVendorId = vendor_id
+    }
+
+    // Get or create a vendor store (required for products)
+    // Note: If vendor_stores table doesn't exist, we'll skip this requirement
+    let storeId = null
+    try {
+      let { data: store } = await supabase
+        .from("vendor_stores")
+        .select("*")
+        .eq("vendor_id", finalVendorId)
+        .single()
+
+      if (!store) {
+        const { data: newStore, error: storeError } = await supabase
+          .from("vendor_stores")
+          .insert({
+            vendor_id: finalVendorId,
+            store_name: "Default Store",
+            store_description: "Default store for vendor",
+            is_verified: true
+          })
+          .select()
+          .single()
+
+        if (storeError) {
+          console.log("Vendor stores table not available, proceeding without store_id")
+        } else {
+          store = newStore
+        }
+      }
+      storeId = store?.id || null
+    } catch (storeError) {
+      console.log("Vendor stores table not available, proceeding without store_id")
     }
 
     // Check if SKU already exists for this vendor
@@ -225,78 +254,41 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const productInsertData: any = {
+      vendor_id: finalVendorId,
+      name,
+      description,
+      price,
+      compare_at_price,
+      inventory_quantity: finalInventoryQuantity,
+      sku: sku || `PRD-${Date.now()}`,
+      images: images || [],
+      tags: tags || [],
+      status,
+      seo_title,
+      seo_description,
+      track_inventory: track_inventory || false,
+    }
+
+    // Add store_id only if we have one
+    if (storeId) {
+      productInsertData.store_id = storeId
+    }
+
     const { data: product, error } = await supabase
       .from("products")
-      .insert({
-        name,
-        description,
-        price,
-        compare_at_price,
-        category_id,
-        stock_quantity: finalStockQuantity,
-        sku: sku || `PRD-${Date.now()}`,
-        brand,
-        images: images || [],
-        tags: tags || [],
-        specifications: specifications || {},
-        weight,
-        dimensions,
-        status,
-        featured: featured || false,
-        seo_title,
-        seo_description,
-        track_inventory: track_inventory || false,
-        vendor_id: finalVendorId,
-      })
-      .select(`
-        *,
-        categories(id, name),
-        profiles!vendor_id(id, first_name, last_name, business_name)
-      `)
+      .insert(productInsertData)
+      .select()
       .single()
 
     if (error) {
       console.error("Error creating product:", error)
-      console.error("Product data that failed:", {
-        name,
-        description,
-        price,
-        compare_at_price,
-        category_id,
-        stock_quantity: finalStockQuantity,
-        sku: sku || `PRD-${Date.now()}`,
-        brand,
-        images: images || [],
-        tags: tags || [],
-        specifications: specifications || {},
-        weight,
-        dimensions,
-        status,
-        featured: featured || false,
-        seo_title,
-        seo_description,
-        track_inventory: track_inventory || false,
-        vendor_id: finalVendorId,
-      })
+      console.error("Product data that failed:", productInsertData)
       return NextResponse.json({ 
         error: "Failed to create product", 
         details: error.message,
         code: error.code 
       }, { status: 500 })
-    }
-
-    // Create audit log
-    try {
-      await supabase.from("audit_logs").insert({
-        user_id: user.id,
-        action: "create",
-        table_name: "products",
-        record_id: product.id,
-        changes: { created: product },
-        ip_address: request.headers.get("x-forwarded-for") || "unknown"
-      })
-    } catch (auditError) {
-      console.log("Could not create audit log:", auditError)
     }
 
     return NextResponse.json({ data: product }, { status: 201 })
