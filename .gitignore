@@ -25,3 +25,36 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Debug and test files
+*.debug.js
+*.debug.mjs
+*.test.mjs
+debug-*.mjs
+test-*.mjs
+check-*.mjs
+fix-*.mjs
+setup-*.mjs
+verify-*.mjs
+
+# Build logs
+*.log
+build*.log
+
+# Temporary files
+temp_*.sql
+*.tmp
+.temp/
+
+# Coverage reports  
+coverage/
+.nyc_output/
+
+# Development documentation
+*_FIXES*.md
+*_REPORT*.md
+*_RESULTS*.md
+*_SUMMARY*.md
+CONSOLE*.md
+ERROR*.md
+URGENT*.md
+

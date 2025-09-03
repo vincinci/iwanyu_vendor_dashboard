@@ -28,46 +28,47 @@ export function ProductCardActions({ productId, productName }: ProductCardAction
   const [isDeleting, setIsDeleting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
 
-  const handleExportImages = async () => {
+    const handleExportImages = async () => {
+    if (!product.images || product.images.length === 0) {
+      toast({
+        title: "No Images",
+        description: "This product has no images to export",
+        variant: "destructive"
+      })
+      return
+    }
+
     setIsExporting(true)
-    
+
     try {
-      const response = await fetch(`/api/products/${productId}/export-images`)
-      
-      if (!response.ok) {
-        throw new Error("Failed to export images")
-      }
-      
-      const data = await response.json()
-      
-      if (data.images.length === 0) {
-        toast.error("No images to export for this product")
-        return
-      }
-      
-      // Download each image
-      for (const image of data.images) {
-        const imageResponse = await fetch(image.url)
-        const blob = await imageResponse.blob()
+      for (let i = 0; i < product.images.length; i++) {
+        const imageUrl = product.images[i]
+        const response = await fetch(imageUrl)
         
-        // Create download link
-        const downloadUrl = window.URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = downloadUrl
-        link.download = image.originalName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(downloadUrl)
-        
-        // Small delay between downloads
-        await new Promise(resolve => setTimeout(resolve, 500))
+        if (response.ok) {
+          const blob = await response.blob()
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `${product.name}-image-${i + 1}.jpg`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+        }
       }
-      
-      toast.success(`Exported ${data.images.length} images successfully`)
+
+      toast({
+        title: "Export Successful",
+        description: `Exported ${product.images.length} image(s)`,
+        variant: "default"
+      })
     } catch (error) {
-      console.error("Error exporting images:", error)
-      toast.error("Failed to export images")
+      toast({
+        title: "Export Failed",
+        description: "Failed to export images",
+        variant: "destructive"
+      })
     } finally {
       setIsExporting(false)
     }

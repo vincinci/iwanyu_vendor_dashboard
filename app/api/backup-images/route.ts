@@ -58,11 +58,7 @@ export async function POST(request: NextRequest) {
           productId
         }
 
-        // Store backup (in production, save to database or cloud service)
-        imageBackups.set(backupId, backup)
         backupIds.push(backupId)
-
-        console.log(`✅ Backup created for ${file.name}: ${backupId}`)
 
       } catch (error) {
         console.error(`Error backing up ${file.name}:`, error)

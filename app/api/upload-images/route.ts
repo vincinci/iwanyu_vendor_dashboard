@@ -63,12 +63,11 @@ export async function POST(request: NextRequest) {
             
             publicUrl = primaryUrl
             uploadSuccess = true
-            console.log(`✅ Primary upload successful: ${fileName}`)
           } else {
-            console.log(`⚠️ Primary storage failed for ${fileName}: ${error.message}`)
+            // Continue to backup storage
           }
         } catch (primaryError) {
-          console.log(`⚠️ Primary storage exception for ${fileName}:`, primaryError)
+          // Continue to backup storage
         }
 
         // If primary failed, try backup storage
@@ -88,12 +87,11 @@ export async function POST(request: NextRequest) {
               
               publicUrl = backupUrl
               uploadSuccess = true
-              console.log(`✅ Backup upload successful: ${fileName}`)
             } else {
-              console.log(`❌ Backup storage also failed for ${fileName}: ${error.message}`)
+              // All storage methods failed
             }
           } catch (backupError) {
-            console.log(`❌ Backup storage exception for ${fileName}:`, backupError)
+            // All storage methods failed
           }
         }
 
@@ -104,7 +102,6 @@ export async function POST(request: NextRequest) {
         }
 
       } catch (error) {
-        console.error(`Error processing file ${file.name}:`, error)
         errors.push(`${file.name}: Processing error`)
       }
     }
@@ -117,12 +114,9 @@ export async function POST(request: NextRequest) {
       errors: errors.length > 0 ? errors : undefined
     }
 
-    console.log('📊 Upload summary:', response)
-
     return NextResponse.json(response)
 
   } catch (error) {
-    console.error("Error in POST /api/upload-images:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

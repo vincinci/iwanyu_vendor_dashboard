@@ -312,9 +312,6 @@ export default function AddProductPage() {
         tags: []
       }
 
-      console.log('📦 Product data being sent to API:', productData)
-      console.log('🖼️ Images to be stored:', imageUrls)
-
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {
