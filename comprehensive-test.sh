@@ -25,13 +25,15 @@ echo "2️⃣ Testing Key Pages..."
 pages=(
     "/vendor/products"
     "/vendor/products/new"
-    "/auth/vendor-login"
+    "/auth/login"
 )
 
 for page in "${pages[@]}"; do
     HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL$page")
     if [ "$HTTP_STATUS" = "200" ]; then
         echo "   ✅ $page (HTTP $HTTP_STATUS)"
+    elif [ "$HTTP_STATUS" = "307" ] && [[ "$page" == "/vendor/"* ]]; then
+        echo "   ✅ $page (HTTP $HTTP_STATUS - Auth redirect expected)"
     else
         echo "   ❌ $page (HTTP $HTTP_STATUS)"
     fi
@@ -83,7 +85,7 @@ echo ""
 echo "Please manually test the following:"
 echo ""
 echo "🔐 Authentication:"
-echo "   □ Visit $APP_URL/auth/vendor-login"
+echo "   □ Visit $APP_URL/auth/login"
 echo "   □ Sign in with vendor credentials"
 echo "   □ Verify redirect to dashboard"
 echo ""

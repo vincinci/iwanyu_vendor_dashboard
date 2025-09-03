@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
       .from("products")
       .select(`
         *,
-        categories(id, name),
         profiles!vendor_id(id, first_name, last_name, business_name)
       `)
 
@@ -55,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      query = query.eq("category_id", category)
+      query = query.eq("category", category)
     }
 
     if (status) {
@@ -91,7 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      countQuery.eq("category_id", category)
+      countQuery.eq("category", category)
     }
 
     if (status) {
