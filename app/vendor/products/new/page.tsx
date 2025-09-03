@@ -130,8 +130,12 @@ export default function AddProductPage() {
     const supabase = createClient()
     const uploadedUrls: string[] = []
 
+    console.log(`🔄 Starting upload of ${files.length} files...`)
+
     for (const file of files) {
       try {
+        console.log(`📤 Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`)
+        
         const fileExt = file.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `products/${fileName}`
@@ -141,8 +145,7 @@ export default function AddProductPage() {
           .upload(filePath, file)
 
         if (error) {
-          console.error('Error uploading file:', error)
-          // Skip this file but continue with others
+          console.error('❌ Upload error:', error)
           toast({
             title: "Upload Warning",
             description: `Failed to upload ${file.name}. ${error.message}`,
@@ -156,6 +159,7 @@ export default function AddProductPage() {
           .getPublicUrl(filePath)
 
         uploadedUrls.push(publicUrl)
+        console.log(`✅ Uploaded successfully: ${publicUrl}`)
         
         toast({
           title: "Upload Success",
@@ -163,8 +167,7 @@ export default function AddProductPage() {
           variant: "default"
         })
       } catch (error) {
-        console.error('Error uploading file:', error)
-        // Continue with other files
+        console.error('❌ Upload exception:', error)
         toast({
           title: "Upload Error",
           description: `Failed to upload ${file.name}`,
@@ -173,6 +176,9 @@ export default function AddProductPage() {
       }
     }
 
+    console.log(`📊 Upload complete. ${uploadedUrls.length}/${files.length} files uploaded successfully`)
+    console.log('🔗 Uploaded URLs:', uploadedUrls)
+    
     return uploadedUrls
   }
 
@@ -208,6 +214,9 @@ export default function AddProductPage() {
         images: imageUrls,
         tags: []
       }
+
+      console.log('📦 Product data being sent to API:', productData)
+      console.log('🖼️ Images to be stored:', imageUrls)
 
       const response = await fetch("/api/products", {
         method: "POST",
