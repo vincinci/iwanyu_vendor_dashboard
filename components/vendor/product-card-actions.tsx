@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Eye, Edit, Trash2, Loader2 } from "lucide-react"
+import { Eye, Edit, Trash2, Download, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -26,6 +26,52 @@ interface ProductCardActionsProps {
 export function ProductCardActions({ productId, productName }: ProductCardActionsProps) {
   const router = useRouter()
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const handleExportImages = async () => {
+    setIsExporting(true)
+    
+    try {
+      const response = await fetch(`/api/products/${productId}/export-images`)
+      
+      if (!response.ok) {
+        throw new Error("Failed to export images")
+      }
+      
+      const data = await response.json()
+      
+      if (data.images.length === 0) {
+        toast.error("No images to export for this product")
+        return
+      }
+      
+      // Download each image
+      for (const image of data.images) {
+        const imageResponse = await fetch(image.url)
+        const blob = await imageResponse.blob()
+        
+        // Create download link
+        const downloadUrl = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = downloadUrl
+        link.download = image.originalName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(downloadUrl)
+        
+        // Small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 500))
+      }
+      
+      toast.success(`Exported ${data.images.length} images successfully`)
+    } catch (error) {
+      console.error("Error exporting images:", error)
+      toast.error("Failed to export images")
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -61,6 +107,19 @@ export function ProductCardActions({ productId, productName }: ProductCardAction
         <Link href={`/vendor/products/edit/${productId}`}>
           <Edit className="h-3 w-3" />
         </Link>
+      </Button>
+      <Button 
+        size="sm" 
+        variant="outline" 
+        onClick={handleExportImages}
+        disabled={isExporting}
+        title="Export Images"
+      >
+        {isExporting ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Download className="h-3 w-3" />
+        )}
       </Button>
       
       <AlertDialog>
