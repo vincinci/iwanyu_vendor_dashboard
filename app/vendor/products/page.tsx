@@ -59,7 +59,7 @@ export default async function ProductsPage() {
                   <div className="aspect-video bg-muted relative">
                     {product.images && product.images.length > 0 ? (
                       <Image
-                        src={(product.images[0]?.url ?? product.images[0]) || "/placeholder.svg"}
+                        src={product.images[0] || "/placeholder.svg"}
                         alt={product.name}
                         fill
                         className="object-cover"
