@@ -127,10 +127,63 @@ export default function AddProductPage() {
   }
 
   const uploadImages = async (files: File[]) => {
+    console.log(`🔄 Starting robust upload of ${files.length} files...`)
+
+    try {
+      // First, try the new robust upload API
+      const formData = new FormData()
+      files.forEach(file => {
+        formData.append('files', file)
+      })
+
+      const response = await fetch('/api/upload-images', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        
+        if (result.success && result.uploadedUrls.length > 0) {
+          console.log(`✅ API upload successful: ${result.uploadedUrls.length}/${result.totalFiles} files`)
+          
+          if (result.errors && result.errors.length > 0) {
+            result.errors.forEach((error: string) => {
+              toast({
+                title: "Upload Warning",
+                description: error,
+                variant: "destructive"
+              })
+            })
+          }
+
+          result.uploadedUrls.forEach((url: string, index: number) => {
+            toast({
+              title: "Upload Success",
+              description: `Image ${index + 1} uploaded successfully!`,
+              variant: "default"
+            })
+          })
+
+          return result.uploadedUrls
+        }
+      }
+
+      // If API upload fails, fall back to direct Supabase upload
+      console.log('⚠️ API upload failed, trying direct upload...')
+      return await uploadImagesDirect(files)
+
+    } catch (error) {
+      console.error('❌ API upload error:', error)
+      return await uploadImagesDirect(files)
+    }
+  }
+
+  const uploadImagesDirect = async (files: File[]) => {
     const supabase = createClient()
     const uploadedUrls: string[] = []
 
-    console.log(`🔄 Starting upload of ${files.length} files...`)
+    console.log(`🔄 Starting direct upload of ${files.length} files...`)
 
     for (const file of files) {
       try {
@@ -140,32 +193,69 @@ export default function AddProductPage() {
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
         const filePath = `products/${fileName}`
 
-        const { data, error } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, file)
+        // Try primary bucket first
+        let uploadSuccess = false
+        let publicUrl = ''
 
-        if (error) {
-          console.error('❌ Upload error:', error)
-          toast({
-            title: "Upload Warning",
-            description: `Failed to upload ${file.name}. ${error.message}`,
-            variant: "destructive"
-          })
-          continue
+        try {
+          const { data, error } = await supabase.storage
+            .from('product-images')
+            .upload(filePath, file)
+
+          if (!error) {
+            const { data: { publicUrl: primaryUrl } } = supabase.storage
+              .from('product-images')
+              .getPublicUrl(filePath)
+            
+            publicUrl = primaryUrl
+            uploadSuccess = true
+          } else {
+            console.log(`⚠️ Primary storage failed: ${error.message}`)
+          }
+        } catch (primaryError) {
+          console.log(`⚠️ Primary storage exception:`, primaryError)
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(filePath)
+        // Try backup bucket if primary fails
+        if (!uploadSuccess) {
+          try {
+            const { data, error } = await supabase.storage
+              .from('vendor-uploads')
+              .upload(filePath, file)
 
-        uploadedUrls.push(publicUrl)
-        console.log(`✅ Uploaded successfully: ${publicUrl}`)
-        
-        toast({
-          title: "Upload Success",
-          description: `${file.name} uploaded successfully!`,
-          variant: "default"
-        })
+            if (!error) {
+              const { data: { publicUrl: backupUrl } } = supabase.storage
+                .from('vendor-uploads')
+                .getPublicUrl(filePath)
+              
+              publicUrl = backupUrl
+              uploadSuccess = true
+              console.log(`✅ Backup storage successful`)
+            } else {
+              console.log(`❌ Backup storage also failed: ${error.message}`)
+            }
+          } catch (backupError) {
+            console.log(`❌ Backup storage exception:`, backupError)
+          }
+        }
+
+        if (uploadSuccess) {
+          uploadedUrls.push(publicUrl)
+          console.log(`✅ Uploaded successfully: ${publicUrl}`)
+          
+          toast({
+            title: "Upload Success",
+            description: `${file.name} uploaded successfully!`,
+            variant: "default"
+          })
+        } else {
+          console.error('❌ All upload methods failed for:', file.name)
+          toast({
+            title: "Upload Error",
+            description: `Failed to upload ${file.name} - all storage methods failed`,
+            variant: "destructive"
+          })
+        }
       } catch (error) {
         console.error('❌ Upload exception:', error)
         toast({
@@ -176,7 +266,7 @@ export default function AddProductPage() {
       }
     }
 
-    console.log(`📊 Upload complete. ${uploadedUrls.length}/${files.length} files uploaded successfully`)
+    console.log(`📊 Direct upload complete. ${uploadedUrls.length}/${files.length} files uploaded successfully`)
     console.log('🔗 Uploaded URLs:', uploadedUrls)
     
     return uploadedUrls
