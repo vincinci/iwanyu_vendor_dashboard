@@ -28,9 +28,6 @@ export default async function ProductsPage() {
           <p className="text-muted-foreground">Manage your product catalog</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/vendor/products/normalize">Normalize Images</Link>
-          </Button>
           <Button asChild>
             <Link href="/vendor/products/new">
               <Plus className="mr-2 h-4 w-4" />
