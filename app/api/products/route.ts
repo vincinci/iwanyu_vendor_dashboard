@@ -207,8 +207,7 @@ export async function POST(request: NextRequest) {
       finalVendorId = vendor_id
     }
 
-    // Get or create a vendor store (required for products)
-    // Note: If vendor_stores table doesn't exist, we'll skip this requirement
+    // Get or create a vendor store (required for products as per schema)
     let storeId = null
     try {
       let { data: store } = await supabase
@@ -230,14 +229,19 @@ export async function POST(request: NextRequest) {
           .single()
 
         if (storeError) {
-          console.log("Vendor stores table not available, proceeding without store_id")
-        } else {
-          store = newStore
+          console.error("Failed to create vendor store:", storeError)
+          return NextResponse.json({ 
+            error: "Failed to create vendor store: " + storeError.message 
+          }, { status: 500 })
         }
+        store = newStore
       }
-      storeId = store?.id || null
+      storeId = store.id
     } catch (storeError) {
-      console.log("Vendor stores table not available, proceeding without store_id")
+      console.error("Error with vendor store:", storeError)
+      return NextResponse.json({ 
+        error: "Failed to handle vendor store: " + (storeError as Error).message 
+      }, { status: 500 })
     }
 
     // Check if SKU already exists for this vendor
@@ -256,12 +260,12 @@ export async function POST(request: NextRequest) {
 
     const productInsertData: any = {
       vendor_id: finalVendorId,
+      store_id: storeId, // Always required per schema
       name,
       description,
       price,
       compare_at_price,
-      category: category || null, // For current schema compatibility
-      category_id: category_id || null, // For future use when schema is updated
+      category: category || null, // Database uses 'category' TEXT field
       inventory_quantity: finalInventoryQuantity,
       sku: sku || `PRD-${Date.now()}`,
       images: images || [],
@@ -272,10 +276,7 @@ export async function POST(request: NextRequest) {
       track_inventory: track_inventory || false,
     }
 
-    // Add store_id only if we have one
-    if (storeId) {
-      productInsertData.store_id = storeId
-    }
+    // Remove the conditional store_id addition since it's always required
 
     console.log('🔍 Product data being inserted into DB:', productInsertData)
 

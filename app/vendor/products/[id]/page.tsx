@@ -27,14 +27,7 @@ export default async function ViewProductPage({ params }: PageProps) {
   // Fetch the product
   const { data: product, error } = await supabase
     .from("products")
-    .select(`
-      *,
-      categories (
-        id,
-        name,
-        description
-      )
-    `)
+    .select("*")
     .eq("id", params.id)
     .eq("vendor_id", user.id)
     .single()
@@ -136,7 +129,7 @@ export default async function ViewProductPage({ params }: PageProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Category</span>
                 <span className="text-sm text-muted-foreground">
-                  {product.categories?.name || product.category || "Uncategorized"}
+                  {product.category || "Uncategorized"}
                 </span>
               </div>
 

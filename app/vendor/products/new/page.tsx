@@ -300,14 +300,13 @@ export default function AddProductPage() {
         console.log('🔍 Uploaded image URLs:', imageUrls)
       }
 
-      // Prepare product data to match API schema (with both category fields for compatibility)
+      // Prepare product data to match actual database schema
       const selectedCategory = categories.find(cat => cat.id === formData.category_id)
       const productData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: Number(formData.price),
-        category: selectedCategory?.name || null, // For backward compatibility
-        category_id: formData.category_id || null, // For future use
+        category: selectedCategory?.name || null, // Database uses 'category' TEXT field
         inventory_quantity: formData.track_inventory ? Number(formData.inventory_quantity) : 0,
         sku: formData.sku.trim() || undefined,
         status: formData.status,
