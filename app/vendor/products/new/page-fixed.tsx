@@ -204,7 +204,7 @@ export default function AddProductPage() {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price),
-        category: formData.category_id || null, // Send as 'category' for the TEXT field
+        category_id: formData.category_id || null,
         inventory_quantity: formData.track_inventory ? parseInt(formData.inventory_quantity) || 0 : null,
         sku: formData.sku || null,
         status: formData.status,
@@ -485,7 +485,7 @@ export default function AddProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
+                        <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
                       ))}

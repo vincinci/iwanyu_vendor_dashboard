@@ -48,178 +48,254 @@ export default function AddProductPage() {
         const { data, error } = await supabase
           .from('categories')
           .select('id, name')
-          .order('name')
-
+          .eq('status', 'active')
+          .order('sort_order')
+        
         if (error) {
-          console.error('Error loading categories:', error)
-          toast({
-            title: "Error",
-            description: "Failed to load categories",
-            variant: "destructive"
-          })
-          return
+          console.error('Failed to load categories:', error)
+          // Fallback to predefined categories
+          setCategories([
+            { id: "electronics", name: "Electronics" },
+            { id: "computers", name: "Computers" },
+            { id: "phones", name: "Phones" },
+            { id: "accessories", name: "Accessories" },
+            { id: "clothing", name: "Clothing" },
+          ])
+        } else {
+          setCategories(data || [])
         }
-
-        setCategories(data || [])
       } catch (error) {
         console.error('Error loading categories:', error)
-        toast({
-          title: "Error",
-          description: "Failed to load categories",
-          variant: "destructive"
-        })
       }
     }
-
+    
     loadCategories()
-  }, [toast])
+  }, [])
 
-  const handleInputChange = (field: string, value: any) => {
+  const fetchCategories = async () => {
+    // No longer needed - using predefined categories
+  }
+
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
-  // Modern file selection handler with validation
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
     
     if (files.length === 0) return
 
-    // Validate file count (max 5 images)
-    const totalFiles = selectedFiles.length + files.length
-    if (totalFiles > 5) {
+    console.log(`📁 Selected ${files.length} files for validation`)
+
+    // Validate file sizes (3MB limit per file)
+    const maxSize = 3 * 1024 * 1024 // 3MB
+    const oversizedFiles = files.filter(file => file.size > maxSize)
+    
+    if (oversizedFiles.length > 0) {
+      const fileList = oversizedFiles.map(f => `${f.name} (${Math.round(f.size / 1024 / 1024)}MB)`).join(', ')
       toast({
-        title: "Too many files",
-        description: "You can upload a maximum of 5 images per product",
+        title: "Files Too Large",
+        description: `${oversizedFiles.length} file(s) exceed the 3MB limit: ${fileList}`,
+        variant: "destructive"
+      })
+      return
+    }
+    
+    // Validate file types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    const invalidFiles = files.filter(file => !validTypes.includes(file.type))
+    
+    if (invalidFiles.length > 0) {
+      const fileList = invalidFiles.map(f => `${f.name} (${f.type})`).join(', ')
+      toast({
+        title: "Invalid File Types",
+        description: `${invalidFiles.length} file(s) are not supported: ${fileList}. Only JPG, PNG, WebP, and GIF are allowed.`,
         variant: "destructive"
       })
       return
     }
 
-    // Validate each file
-    const validFiles: File[] = []
-    const newPreviews: {file: File, preview: string}[] = []
-
-    for (const file of files) {
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: "File too large",
-          description: `${file.name} is larger than 5MB`,
-          variant: "destructive"
-        })
-        continue
-      }
-
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Invalid file type",
-          description: `${file.name} is not an image file`,
-          variant: "destructive"
-        })
-        continue
-      }
-
-      validFiles.push(file)
-      newPreviews.push({
-        file,
-        preview: URL.createObjectURL(file)
+    // Validate file count (max 5 images)
+    const limitedFiles = files.slice(0, 5)
+    if (files.length > 5) {
+      toast({
+        title: "Too Many Files",
+        description: `Only the first 5 images will be selected. ${files.length - 5} files were ignored.`,
+        variant: "default"
       })
     }
-
-    if (validFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...validFiles])
-      setSelectedImagePreviews(prev => [...prev, ...newPreviews])
-      
-      // Set first image as primary if none selected
-      if (selectedImagePreviews.length === 0) {
-        setPrimaryImageIndex(0)
-      }
-    }
+    
+    setSelectedFiles(limitedFiles)
+    
+    // Create preview URLs for selected images
+    const previews = limitedFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }))
+    
+    // Clean up previous preview URLs to prevent memory leaks
+    selectedImagePreviews.forEach(item => {
+      URL.revokeObjectURL(item.preview)
+    })
+    
+    setSelectedImagePreviews(previews)
+    setPrimaryImageIndex(0) // Reset primary image to first image
+    
+    console.log(`✅ ${limitedFiles.length} files selected and validated`)
+  }
   }
 
-  // Modern image upload with direct API call
-  const uploadImages = async (files: File[]): Promise<string[]> => {
-    if (files.length === 0) return []
+  // Clean up preview URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      selectedImagePreviews.forEach(item => {
+        URL.revokeObjectURL(item.preview)
+      })
+    }
+  }, [selectedImagePreviews])
 
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Product name is required",
+        variant: "destructive"
+      })
+      return false
+    }
+
+    if (!formData.price || Number(formData.price) <= 0) {
+      toast({
+        title: "Validation Error", 
+        description: "Valid price is required",
+        variant: "destructive"
+      })
+      return false
+    }
+
+    if (formData.track_inventory && (!formData.inventory_quantity || Number(formData.inventory_quantity) < 0)) {
+      toast({
+        title: "Validation Error",
+        description: "Valid inventory quantity is required when tracking inventory",
+        variant: "destructive"
+      })
+      return false
+    }
+
+    return true
+  }
+
+  const uploadImages = async (files: File[]) => {
+    if (!files || files.length === 0) return []
+
+    console.log(`� Starting modern upload of ${files.length} files`)
     setUploadStatus('uploading')
-    
+
     try {
+      // Create form data
       const formData = new FormData()
-      files.forEach((file, index) => {
-        formData.append(`image_${index}`, file)
+      files.forEach(file => {
+        formData.append('files', file)
       })
 
+      // Upload via modern API
       const response = await fetch('/api/upload-images', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
 
       const result = await response.json()
-      console.log('🔍 Upload response:', result)
 
-      if (!response.ok) {
+      if (result.success && result.files && result.files.length > 0) {
+        console.log(`✅ Upload successful: ${result.uploaded}/${result.total} files`)
+        
+        // Extract URLs from the response
+        const urls = result.files.map((file: any) => file.url)
+        
+        setUploadStatus('success')
+        
+        // Show success notification
+        toast({
+          title: "Upload Successful",
+          description: `${result.uploaded} image(s) uploaded successfully!`,
+          variant: "default"
+        })
+
+        // Show errors if any
+        if (result.errors && result.errors.length > 0) {
+          result.errors.forEach((error: any) => {
+            toast({
+              title: "Upload Error",
+              description: `${error.file}: ${error.error}`,
+              variant: "destructive"
+            })
+          })
+        }
+
+        return urls
+      } else {
         throw new Error(result.error || 'Upload failed')
       }
 
-      setUploadStatus('success')
-      return result.urls || []
-    } catch (error: any) {
-      console.error('Upload error:', error)
+    } catch (error) {
+      console.error('❌ Upload failed:', error)
       setUploadStatus('error')
-      throw error
+      
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : 'Failed to upload images',
+        variant: "destructive"
+      })
+
+      return []
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) return
+
     setLoading(true)
 
     try {
-      console.log('🚀 Starting product creation...')
-      
-      // Validate required fields
-      if (!formData.name || !formData.price) {
-        toast({
-          title: "Validation Error",
-          description: "Please fill in all required fields",
-          variant: "destructive"
-        })
-        return
-      }
-
-      // Upload images first (if any)
+      // Upload images first - reorder to put primary image first
       let imageUrls: string[] = []
       if (selectedFiles.length > 0) {
-        console.log('📸 Uploading images...', selectedFiles.length)
-        imageUrls = await uploadImages(selectedFiles)
-        console.log('✅ Images uploaded:', imageUrls)
+        // Reorder files so primary image is first
+        const reorderedFiles = [...selectedFiles]
+        if (primaryImageIndex > 0) {
+          const primaryFile = reorderedFiles.splice(primaryImageIndex, 1)[0]
+          reorderedFiles.unshift(primaryFile)
+        }
+        imageUrls = await uploadImages(reorderedFiles)
+        console.log('🔍 Uploaded image URLs:', imageUrls)
       }
 
-      // Prepare product data
+      // Prepare product data to match actual database schema
+      const selectedCategory = categories.find(cat => cat.id === formData.category_id)
       const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: parseFloat(formData.price),
-        category: formData.category_id || null, // Send as 'category' for the TEXT field
-        inventory_quantity: formData.track_inventory ? parseInt(formData.inventory_quantity) || 0 : null,
-        sku: formData.sku || null,
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        price: Number(formData.price),
+        category_id: formData.category_id || null, // Database uses 'category_id' UUID field
+        inventory_quantity: formData.track_inventory ? Number(formData.inventory_quantity) : 0,
+        sku: formData.sku.trim() || undefined,
         status: formData.status,
         track_inventory: formData.track_inventory,
-        image_urls: imageUrls,
-        primary_image_url: imageUrls[primaryImageIndex] || imageUrls[0] || null
+        images: imageUrls,
+        tags: []
       }
 
-      console.log('📦 Creating product with data:', productData)
+      console.log('🔍 Product data being sent:', productData)
 
-      // Create product
-      const response = await fetch('/api/products', {
-        method: 'POST',
+      const response = await fetch("/api/products", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(productData)
       })
@@ -366,7 +442,7 @@ export default function AddProductPage() {
                             key={index} 
                             className={`relative group cursor-pointer border-2 rounded-lg overflow-hidden ${
                               index === primaryImageIndex 
-                                ? 'border-blue-500 ring-2 ring-blue-200'
+                                ? 'border-blue-500 ring-2 ring-blue-200' 
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                             onClick={() => setPrimaryImageIndex(index)}
@@ -485,7 +561,7 @@ export default function AddProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.name}>
+                        <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
                       ))}

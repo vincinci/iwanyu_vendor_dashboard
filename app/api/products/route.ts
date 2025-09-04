@@ -177,6 +177,8 @@ export async function POST(request: NextRequest) {
       stock_quantity,
       sku,
       images,
+      image_urls, // New field from redesigned frontend
+      primary_image_url, // New field from redesigned frontend
       tags,
       status = "active",
       seo_title,
@@ -184,6 +186,18 @@ export async function POST(request: NextRequest) {
       track_inventory,
       vendor_id
     } = body
+
+    // Handle both old and new image field formats
+    const finalImages = image_urls || images || []
+    
+    // If we have a primary image URL, ensure it's first in the array
+    let orderedImages = [...finalImages]
+    if (primary_image_url && !orderedImages.includes(primary_image_url)) {
+      orderedImages.unshift(primary_image_url)
+    } else if (primary_image_url && orderedImages.includes(primary_image_url)) {
+      // Move primary image to front
+      orderedImages = [primary_image_url, ...orderedImages.filter(url => url !== primary_image_url)]
+    }
 
     // Use inventory_quantity if provided, otherwise fall back to stock_quantity
     const finalInventoryQuantity = inventory_quantity !== undefined ? inventory_quantity : (stock_quantity || 0)
@@ -265,16 +279,18 @@ export async function POST(request: NextRequest) {
       description,
       price,
       compare_at_price,
-      category_id: category_id || null, // Database uses 'category_id' UUID field
+      category: category || category_id || null, // Database uses 'category' TEXT field
       inventory_quantity: finalInventoryQuantity,
       sku: sku || `PRD-${Date.now()}`,
-      images: images || [],
+      images: orderedImages, // Use the ordered images array with primary image first
       tags: tags || [],
       status,
       seo_title,
       seo_description,
       track_inventory: track_inventory || false,
     }
+
+    // Remove the primary_image_url assignment since it's not in the schema
 
     // Remove the conditional store_id addition since it's always required
 

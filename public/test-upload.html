@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin: 20px 0; }
+        .preview { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+        .preview img { width: 100px; height: 100px; object-fit: cover; border: 1px solid #ddd; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .loading { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Image Upload Test</h1>
+    <p>Test the redesigned image upload system without authentication</p>
+    
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>Click here to select images or drag and drop</p>
+        <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+    </div>
+    
+    <div id="preview" class="preview"></div>
+    <div id="status"></div>
+    
+    <button id="uploadBtn" onclick="uploadImages()" disabled>Upload Images</button>
+    <button onclick="clearAll()">Clear All</button>
+    
+    <script>
+        let selectedFiles = [];
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            selectedFiles = [...selectedFiles, ...files];
+            updatePreview();
+            document.getElementById('uploadBtn').disabled = selectedFiles.length === 0;
+        }
+        
+        function updatePreview() {
+            const preview = document.getElementById('preview');
+            preview.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.title = file.name;
+                preview.appendChild(img);
+            });
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+        
+        async function uploadImages() {
+            if (selectedFiles.length === 0) return;
+            
+            showStatus('Uploading images...', 'loading');
+            document.getElementById('uploadBtn').disabled = true;
+            
+            try {
+                const formData = new FormData();
+                selectedFiles.forEach((file, index) => {
+                    formData.append(`image_${index}`, file);
+                });
+                
+                const response = await fetch('/api/test-upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showStatus(`✅ Success! Uploaded ${result.files.length} files`, 'success');
+                    console.log('Upload result:', result);
+                } else {
+                    showStatus(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`❌ Upload failed: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('uploadBtn').disabled = false;
+        }
+        
+        function clearAll() {
+            selectedFiles = [];
+            updatePreview();
+            document.getElementById('status').innerHTML = '';
+            document.getElementById('uploadBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

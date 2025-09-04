@@ -1,122 +1,175 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/utils/supabase-server"
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
+// Runtime configuration
+export const runtime = 'nodejs'
+export const maxDuration = 30
 
+export async function POST(request: NextRequest) {
+  console.log('� Image upload request received')
+  
+  try {
+    // Initialize Supabase client
+    const supabase = await createClient()
+    
+    // Authenticate user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      console.log('❌ Authentication failed')
+      return NextResponse.json({ 
+        success: false,
+        error: "Authentication required" 
+      }, { status: 401 })
     }
 
+    console.log(`✅ User authenticated: ${user.id}`)
+
+    // Parse form data
     const formData = await request.formData()
-    const files = formData.getAll("files") as File[]
+    
+    // Support both field formats: "files" and "image_0", "image_1", etc.
+    let files: File[] = []
+    
+    // Try "files" field first (standard)
+    const filesField = formData.getAll("files") as File[]
+    if (filesField.length > 0) {
+      files = filesField
+    } else {
+      // Try "image_0", "image_1", etc. format
+      const entries = Array.from(formData.entries())
+      files = entries
+        .filter(([key, value]) => key.startsWith('image_') && value instanceof File)
+        .map(([key, value]) => value as File)
+    }
     
     if (!files || files.length === 0) {
-      return NextResponse.json({ error: "No files provided" }, { status: 400 })
+      return NextResponse.json({ 
+        success: false,
+        error: "No files provided" 
+      }, { status: 400 })
     }
 
-    const uploadedUrls: string[] = []
-    const errors: string[] = []
-    
-    // Primary and backup storage buckets
-    const primaryBucket = 'product-images'
-    const backupBucket = 'vendor-uploads'
+    console.log(`� Processing ${files.length} files`)
 
-    for (const file of files) {
+    const results = []
+    const errors = []
+
+    // Process each file
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      console.log(`� Processing file ${i + 1}: ${file.name} (${Math.round(file.size / 1024)}KB)`)
+
       try {
         // Validate file
-        if (!file.type.startsWith('image/')) {
-          errors.push(`${file.name}: Not an image file`)
-          continue
-        }
-        
-        if (file.size > 10 * 1024 * 1024) { // 10MB limit
-          errors.push(`${file.name}: File too large (max 10MB)`)
+        const validation = validateFile(file)
+        if (!validation.valid) {
+          errors.push({ file: file.name, error: validation.error })
           continue
         }
 
-        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-        const filePath = `products/${fileName}`
+        // Generate unique filename
+        const filename = generateUniqueFilename(file.name, user.id)
+        const filePath = `products/${filename}`
 
-        let uploadSuccess = false
-        let publicUrl = ''
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            contentType: file.type,
+            cacheControl: '3600',
+            upsert: false
+          })
 
-        // Try primary storage first
+        if (uploadError) {
+          console.log(`❌ Upload failed for ${file.name}:`, uploadError.message)
+          errors.push({ file: file.name, error: uploadError.message })
+          continue
+        }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath)
+
+        // Verify the URL is accessible
         try {
-          const { data, error } = await supabase.storage
-            .from(primaryBucket)
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: false
-            })
-
-          if (!error) {
-            const { data: { publicUrl: primaryUrl } } = supabase.storage
-              .from(primaryBucket)
-              .getPublicUrl(filePath)
-            
-            publicUrl = primaryUrl
-            uploadSuccess = true
-          } else {
-            // Continue to backup storage
+          const response = await fetch(publicUrl, { method: 'HEAD' })
+          if (!response.ok) {
+            throw new Error(`URL not accessible: ${response.status}`)
           }
-        } catch (primaryError) {
-          // Continue to backup storage
+        } catch (urlError) {
+          console.log(`⚠️ URL verification failed for ${file.name}`)
         }
 
-        // If primary failed, try backup storage
-        if (!uploadSuccess) {
-          try {
-            const { data, error } = await supabase.storage
-              .from(backupBucket)
-              .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-              })
+        results.push({
+          filename: file.name,
+          url: publicUrl,
+          path: filePath,
+          size: file.size,
+          type: file.type
+        })
 
-            if (!error) {
-              const { data: { publicUrl: backupUrl } } = supabase.storage
-                .from(backupBucket)
-                .getPublicUrl(filePath)
-              
-              publicUrl = backupUrl
-              uploadSuccess = true
-            } else {
-              // All storage methods failed
-            }
-          } catch (backupError) {
-            // All storage methods failed
-          }
-        }
+        console.log(`✅ Successfully uploaded: ${file.name} → ${publicUrl}`)
 
-        if (uploadSuccess) {
-          uploadedUrls.push(publicUrl)
-        } else {
-          errors.push(`${file.name}: Upload failed to both primary and backup storage`)
-        }
-
-      } catch (error) {
-        errors.push(`${file.name}: Processing error`)
+      } catch (fileError) {
+        console.log(`❌ Error processing ${file.name}:`, fileError)
+        errors.push({ 
+          file: file.name, 
+          error: fileError instanceof Error ? fileError.message : 'Unknown error' 
+        })
       }
     }
 
+    // Return comprehensive response
     const response = {
-      success: uploadedUrls.length > 0,
-      uploadedUrls,
-      totalUploaded: uploadedUrls.length,
-      totalFiles: files.length,
+      success: results.length > 0,
+      uploaded: results.length,
+      total: files.length,
+      files: results,
       errors: errors.length > 0 ? errors : undefined
     }
 
+    console.log(`🎯 Upload complete: ${results.length}/${files.length} files successful`)
     return NextResponse.json(response)
 
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error('💥 Upload endpoint error:', error)
+    return NextResponse.json({
+      success: false,
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
+}
+
+// File validation function
+function validateFile(file: File): { valid: boolean; error?: string } {
+  // Check file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+  if (!allowedTypes.includes(file.type)) {
+    return { valid: false, error: `Invalid file type: ${file.type}. Only JPG, PNG, WebP, and GIF are allowed.` }
+  }
+
+  // Check file size (3MB limit)
+  const maxSize = 3 * 1024 * 1024 // 3MB
+  if (file.size > maxSize) {
+    return { valid: false, error: `File too large: ${Math.round(file.size / 1024 / 1024)}MB. Maximum size is 3MB.` }
+  }
+
+  // Check minimum size (1KB)
+  if (file.size < 1024) {
+    return { valid: false, error: 'File too small. Minimum size is 1KB.' }
+  }
+
+  return { valid: true }
+}
+
+// Generate unique filename
+function generateUniqueFilename(originalName: string, userId: string): string {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).substring(2, 8)
+  const extension = originalName.split('.').pop()?.toLowerCase() || 'jpg'
+  const sanitizedUserId = userId.replace(/[^a-zA-Z0-9]/g, '').substring(0, 8)
+  
+  return `${timestamp}-${sanitizedUserId}-${random}.${extension}`
 }
