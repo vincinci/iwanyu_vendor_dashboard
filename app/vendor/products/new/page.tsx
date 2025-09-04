@@ -41,19 +41,35 @@ export default function AddProductPage() {
   })
 
   useEffect(() => {
-    // Set predefined categories instead of fetching from database
-    setCategories([
-      { id: "electronics", name: "Electronics" },
-      { id: "computers", name: "Computers" },
-      { id: "phones", name: "Phones" },
-      { id: "accessories", name: "Accessories" },
-      { id: "clothing", name: "Clothing" },
-      { id: "books", name: "Books" },
-      { id: "home", name: "Home & Garden" },
-      { id: "sports", name: "Sports" },
-      { id: "beauty", name: "Beauty" },
-      { id: "other", name: "Other" }
-    ])
+    // Load categories from database
+    async function loadCategories() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('categories')
+          .select('id, name')
+          .eq('status', 'active')
+          .order('sort_order')
+        
+        if (error) {
+          console.error('Failed to load categories:', error)
+          // Fallback to predefined categories
+          setCategories([
+            { id: "electronics", name: "Electronics" },
+            { id: "computers", name: "Computers" },
+            { id: "phones", name: "Phones" },
+            { id: "accessories", name: "Accessories" },
+            { id: "clothing", name: "Clothing" },
+          ])
+        } else {
+          setCategories(data || [])
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error)
+      }
+    }
+    
+    loadCategories()
   }, [])
 
   const fetchCategories = async () => {
@@ -306,7 +322,7 @@ export default function AddProductPage() {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: Number(formData.price),
-        category: selectedCategory?.name || null, // Database uses 'category' TEXT field
+        category_id: formData.category_id || null, // Database uses 'category_id' UUID field
         inventory_quantity: formData.track_inventory ? Number(formData.inventory_quantity) : 0,
         sku: formData.sku.trim() || undefined,
         status: formData.status,

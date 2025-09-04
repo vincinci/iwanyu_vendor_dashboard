@@ -24,10 +24,13 @@ export default async function ViewProductPage({ params }: PageProps) {
     notFound()
   }
 
-  // Fetch the product
+  // Fetch the product with category information
   const { data: product, error } = await supabase
     .from("products")
-    .select("*")
+    .select(`
+      *,
+      categories(id, name)
+    `)
     .eq("id", params.id)
     .eq("vendor_id", user.id)
     .single()
@@ -129,7 +132,7 @@ export default async function ViewProductPage({ params }: PageProps) {
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Category</span>
                 <span className="text-sm text-muted-foreground">
-                  {product.category || "Uncategorized"}
+                  {product.categories?.name || "Uncategorized"}
                 </span>
               </div>
 

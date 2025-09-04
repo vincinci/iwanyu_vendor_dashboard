@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       .from("products")
       .select(`
         *,
+        categories(id, name),
         profiles!vendor_id(id, first_name, last_name, business_name)
       `)
 
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      query = query.eq("category", category)
+      query = query.eq("category_id", category)
     }
 
     if (status) {
@@ -90,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (category) {
-      countQuery.eq("category", category)
+      countQuery.eq("category_id", category)
     }
 
     if (status) {
@@ -264,7 +265,7 @@ export async function POST(request: NextRequest) {
       description,
       price,
       compare_at_price,
-      category: category || null, // Database uses 'category' TEXT field
+      category_id: category_id || null, // Database uses 'category_id' UUID field
       inventory_quantity: finalInventoryQuantity,
       sku: sku || `PRD-${Date.now()}`,
       images: images || [],
